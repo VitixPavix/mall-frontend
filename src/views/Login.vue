@@ -242,9 +242,19 @@ const handleLogin = async () => {
         // 4. 再根据身份获取用户详细信息并存入 Pinia
         const infoRes = await config.infoService()
         console.log('后端返回的用户信息:', infoRes.data)
+        
+        // 5. 检查用户状态（超级管理员 id=1 除外）
+        const isSuperAdmin = form.role === 'admin' && infoRes.data.id === 1
+        if (!isSuperAdmin && infoRes.data.state === '禁用') {
+            // 清除已保存的 token 和用户信息
+            tokenStore.removeToken()
+            ElMessage.error('您的账号已被禁用，无法登录')
+            return
+        }
+        
         userInfoStore.setInfo(infoRes.data)
         
-        // 5. 提示并按身份跳转对应主页
+        // 6. 提示并按身份跳转对应主页
         ElMessage.success(result.msg || '登录成功')
         console.log('跳转到:', config.homePath)
         router.push(config.homePath)

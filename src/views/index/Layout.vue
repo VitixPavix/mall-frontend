@@ -148,13 +148,23 @@ const currentNav = ref(route.path) // 直接使用路由路径
 const userRole = computed(() => userInfoStore.info?.role || 'user')
 
 // 导航菜单数据 - 简化为直接使用路径
-const navItems = [
-  { path: '/home', label: '首页' },
-  { path: '/products', label: '商品列表' },
-  { path: '/cart', label: '购物车' },
-  { path: '/order', label: '我的订单' },
-  { path: '/userCenter', label: '个人中心' }
-]
+const navItems = computed(() => {
+  const baseItems = [
+    { path: '/home', label: '首页' },
+    { path: '/products', label: '商品列表' }
+  ]
+  
+  // 只有普通用户登录时才显示购物车、我的订单、个人中心
+  if (isLoggedIn.value && userRole.value === 'user') {
+    baseItems.push(
+      { path: '/cart', label: '购物车' },
+      { path: '/order', label: '我的订单' },
+      { path: '/userCenter', label: '个人中心' }
+    )
+  }
+  
+  return baseItems
+})
 
 import { userInfoService } from '@/api/user'
 import useUserInfoStore from '@/stores/userInfo'
@@ -203,7 +213,7 @@ const handleNavClick = (path) => {
 // 监听路由变化，直接更新当前导航
 watch(() => route.path, (newPath) => {
   // 处理二级路由，匹配父路由
-  const matchedNav = navItems.find(item => newPath.startsWith(item.path))
+  const matchedNav = navItems.value.find(item => newPath.startsWith(item.path))
   if (matchedNav) {
     currentNav.value = matchedNav.path
   } else {
