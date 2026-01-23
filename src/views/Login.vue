@@ -1,5 +1,5 @@
 <template>
-    <div class="login-container">
+    <div class="login-container" :key="route.params.type || 'login'">
         <div class="login-card">
             <div class="login-header">
                 <h1>{{ isRegister ? '注册账号' : '欢迎登录' }}</h1>

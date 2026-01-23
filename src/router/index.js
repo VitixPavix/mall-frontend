@@ -99,8 +99,13 @@ router.beforeEach((to, from, next) => {
   // 检查 token 是否存在且未过期
   if (tokenStore.token && !tokenStore.isTokenExpired()) {
     // 已登录
-    // 如果访问登录页，则根据角色重定向
-    if (to.path.startsWith('/login')) {
+    // 如果访问登录页，则根据角色重定向（但允许在登录页内部切换模式）
+    if (to.path.startsWith('/login') && from.path.startsWith('/login')) {
+      // 从登录页切换到注册页，或反之，允许通过
+      next()
+      return
+    } else if (to.path.startsWith('/login')) {
+      // 从其他页面访问登录页，重定向到首页
       const role = userInfoStore.info.role
       if (role === 'admin') {
         next('/admin')
@@ -135,8 +140,8 @@ router.beforeEach((to, from, next) => {
     next()
   } else {
     // 未登录或token过期
-    if (isWhiteList(to.path)) {
-      // 如果token过期但访问的是白名单页面，清除token和用户信息
+    if (isWhiteList(to.path) || to.path.startsWith('/login')) {
+      // 如果token过期但访问的是白名单页面或登录页，清除token和用户信息
       if (tokenStore.token && tokenStore.isTokenExpired()) {
         tokenStore.removeToken()
         userInfoStore.removeInfo()

@@ -111,8 +111,7 @@
     <el-footer>
 
       <el-divider>Helping Farmer Mall</el-divider>
-      <div style="text-align: center;padding-bottom: 50px;"><span class="footer">Farmer Mall ©2025 Created by zhy |
-          玉林师范学院</span></div>
+      <div style="text-align: center;padding-bottom: 50px;"><span class="footer">Farmer Mall ©2026 Created by zhy</span></div>
     </el-footer>
   </el-container>
 </template>

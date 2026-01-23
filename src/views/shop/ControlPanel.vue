@@ -74,7 +74,7 @@
       <el-footer class="page-footer">
         <el-divider>Helping Farmer Mall</el-divider>
         <div class="footer-text">
-          Farmer Mall ©2025 Created by zhy | 玉林师范学院
+          Farmer Mall ©2026 Created by zhy
         </div>
       </el-footer>
     </el-container>
