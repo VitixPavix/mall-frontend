@@ -252,7 +252,7 @@ const handleDelete = (row) => {
     }
   ).then(async () => {
     try {
-      const res = await deleteProductService(row.productId)
+      const res = await deleteBrowsingRecordService(row.id)
       if (res.code === 0) {
         ElMessage.success('删除成功')
         fetchRecordList()
@@ -305,7 +305,7 @@ const handleBatchDelete = () => {
 
 // 表格选择变化
 const handleSelectionChange = (selection) => {
-  selectedIds.value = selection.map(item => item.productId)
+  selectedIds.value = selection.map(item => item.id)
 }
 
 // 分页大小改变

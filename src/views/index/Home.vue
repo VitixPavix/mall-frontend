@@ -249,7 +249,6 @@ const fetchHotProducts = async () => {
         sales: item.sales || 0,
         image: item.coverImg || defaultImage
       }))
-      console.log('hotProducts:', hotProducts.value)
     } else {
       ElMessage.error(res.message || '获取热销商品失败')
     }
