@@ -1,5 +1,17 @@
 <template>
     <div class="login-container" :key="route.params.type || 'login'">
+        <!-- 回到商城按钮 -->
+        <el-button 
+            class="back-to-mall-btn" 
+            type="info" 
+            :icon="HomeFilled"
+            @click="backToMall"
+            plain
+            size="default"
+        >
+            回到商城
+        </el-button>
+
         <div class="login-card">
             <div class="login-header">
                 <h1>{{ isRegister ? '注册账号' : '欢迎登录' }}</h1>
@@ -127,7 +139,7 @@
 <script setup>
 import { ref, reactive, watch, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { User, Lock, Iphone, Shop, Plus, View } from '@element-plus/icons-vue'
+import { User, Lock, Iphone, Shop, Plus, View, HomeFilled } from '@element-plus/icons-vue'
 import { uploadImageService } from '@/api/upload'
 
 // 响应式数据
@@ -224,7 +236,6 @@ const handleRoleChange = () => {
 const handleLogin = async () => {
     loading.value = true
     try {
-        console.log('当前登录角色:', form.role)
         const config = roleConfig[form.role]
         if (!config) {
             throw new Error(`未找到角色配置: ${form.role}`)
@@ -241,7 +252,6 @@ const handleLogin = async () => {
         
         // 4. 再根据身份获取用户详细信息并存入 Pinia
         const infoRes = await config.infoService()
-        console.log('后端返回的用户信息:', infoRes.data)
         
         // 5. 检查用户状态（超级管理员 id=1 除外）
         const isSuperAdmin = form.role === 'admin' && infoRes.data.id === 1
@@ -256,7 +266,6 @@ const handleLogin = async () => {
         
         // 6. 提示并按身份跳转对应主页
         ElMessage.success(result.msg || '登录成功')
-        console.log('跳转到:', config.homePath)
         router.push(config.homePath)
     } catch (error) {
         console.error('登录错误:', error)
@@ -375,6 +384,11 @@ watch(isRegister, (newVal) => {
     }
 })
 
+// 回到商城首页
+const backToMall = () => {
+    router.push('/home')
+}
+
 </script>
 
 <style scoped>
@@ -395,6 +409,34 @@ watch(isRegister, (newVal) => {
 
     /* 内边距，确保在小屏幕上也有呼吸空间 */
     padding: 20px;
+
+    /* 相对定位，为绝对定位的子元素提供参考 */
+    position: relative;
+}
+
+/* 回到商城按钮 */
+.back-to-mall-btn {
+    position: absolute;
+    top: 30px;
+    left: 30px;
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #667eea;
+    font-weight: 500;
+    transition: all 0.3s;
+    backdrop-filter: blur(10px);
+    /* 覆盖默认的宽度设置 */
+    width: auto !important;
+    height: auto !important;
+    padding: 10px 20px;
+    font-size: 15px;
+}
+
+.back-to-mall-btn:hover {
+    background: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* 登录卡片 - 主要内容区域 */
@@ -690,6 +732,14 @@ watch(isRegister, (newVal) => {
     /* 减少内边距，为小屏幕节省空间 */
     .login-body {
         padding: 20px;
+    }
+
+    /* 小屏幕上调整回到商城按钮位置 */
+    .back-to-mall-btn {
+        top: 15px;
+        left: 15px;
+        font-size: 14px;
+        padding: 8px 15px;
     }
 }
 </style>

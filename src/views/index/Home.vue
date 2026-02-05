@@ -345,7 +345,7 @@ onMounted(() => {
 
 .banner img {
   width: 100%;
-  height: 120px;
+  height: 300px;
   object-fit: cover;
 }
 

@@ -4,6 +4,10 @@ import { ElMessage } from 'element-plus'
 //定义路由关系
 const routes = [
   { 
+    path: '/homepage',
+    component: () => import('@/views/homepage/Home.vue')
+  },
+  { 
     path: '/login/:type?', 
     component: () => import('@/views/Login.vue')
   },
@@ -89,7 +93,7 @@ router.beforeEach((to, from, next) => {
 
   // 白名单路由（无需登录即可访问）
   const isWhiteList = (path) => {
-    const whiteListPaths = ['/login', '/home', '/products']
+    const whiteListPaths = ['/login', '/homepage', '/home', '/products']
     const whiteListPrefixes = ['/product/', '/shop/']
     
     return whiteListPaths.includes(path) || 

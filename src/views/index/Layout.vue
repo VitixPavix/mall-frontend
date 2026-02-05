@@ -113,11 +113,15 @@
       <el-divider>Helping Farmer Mall</el-divider>
       <div style="text-align: center;padding-bottom: 50px;"><span class="footer">Farmer Mall ©2026 Created by zhy</span></div>
     </el-footer>
+
+    <!-- AI聊天助手 -->
+    <AiChat />
   </el-container>
 </template>
 
 <script setup>
 import { ref, watch } from 'vue'
+import AiChat from '@/components/AiChat.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   ArrowDown,
