@@ -11,6 +11,15 @@ const routes = [
     path: '/login/:type?', 
     component: () => import('@/views/Login.vue')
   },
+  { 
+    path: '/ai-login/:type?', 
+    component: () => import('@/views/ai/AiLogin.vue')
+  },
+  {
+    path: '/ai-chat',
+    component: () => import('@/views/ai/AiChat.vue'),
+    meta: { requiresAuth: true }
+  },
   {
     path: '/',
     component: () => import('@/views/index/Layout.vue'),
@@ -93,7 +102,7 @@ router.beforeEach((to, from, next) => {
 
   // 白名单路由（无需登录即可访问）
   const isWhiteList = (path) => {
-    const whiteListPaths = ['/login', '/homepage', '/home', '/products']
+    const whiteListPaths = ['/login', '/ai-login', '/homepage', '/home', '/products']
     const whiteListPrefixes = ['/product/', '/shop/']
     
     return whiteListPaths.includes(path) || 
@@ -121,6 +130,15 @@ router.beforeEach((to, from, next) => {
       return
     }
 
+    // AI登录页处理：已登录用户访问AI登录页时，重定向到AI聊天页
+    if (to.path.startsWith('/ai-login') && from.path.startsWith('/ai-login')) {
+      next()
+      return
+    } else if (to.path.startsWith('/ai-login')) {
+      next('/ai-chat')
+      return
+    }
+
     // 角色权限检查
     const userRole = userInfoStore.info.role
     if (to.path.startsWith('/admin') && userRole !== 'admin') {
@@ -144,7 +162,7 @@ router.beforeEach((to, from, next) => {
     next()
   } else {
     // 未登录或token过期
-    if (isWhiteList(to.path) || to.path.startsWith('/login')) {
+    if (isWhiteList(to.path) || to.path.startsWith('/login') || to.path.startsWith('/ai-login')) {
       // 如果token过期但访问的是白名单页面或登录页，清除token和用户信息
       if (tokenStore.token && tokenStore.isTokenExpired()) {
         tokenStore.removeToken()
@@ -158,7 +176,12 @@ router.beforeEach((to, from, next) => {
         userInfoStore.removeInfo()
         ElMessage.warning('登录已过期，请重新登录')
       }
-      next('/login')
+      // AI聊天页面跳转到AI登录页，其他页面跳转到商城登录页
+      if (to.path === '/ai-chat') {
+        next('/ai-login')
+      } else {
+        next('/login')
+      }
     }
   }
 })

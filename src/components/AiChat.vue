@@ -51,19 +51,40 @@
           <div class="settings-content">
             <div class="setting-item">
               <label>选择模型</label>
-              <el-select v-model="selectedModel" placeholder="选择AI模型">
+              <el-select 
+                v-model="selectedModel" 
+                placeholder="选择AI模型"
+                teleported
+                popper-class="ai-chat-select-popper"
+                :popper-options="{
+                  strategy: 'fixed',
+                  modifiers: [
+                    {
+                      name: 'flip',
+                      enabled: false
+                    },
+                    {
+                      name: 'preventOverflow',
+                      options: {
+                        boundary: 'viewport'
+                      }
+                    }
+                  ]
+                }"
+              >
                 <el-option
-                  v-for="option in modelOptions"
-                  :key="option.value"
-                  :label="option.label"
-                  :value="option.value"
+                  v-for="(info, key) in models"
+                  :key="key"
+                  :label="info.description"
+                  :value="key"
                 >
-                  <div class="provider-option">
-                    <span>{{ option.label }}</span>
-                    <span class="provider-desc">{{ option.description }}</span>
+                  <div class="model-option">
+                    <span>{{ info.description }}</span>
+                    <span class="model-desc">{{ info.model }}</span>
                   </div>
                 </el-option>
               </el-select>
+              <div class="setting-hint">当前使用: {{ selectedModel ? models[selectedModel]?.description : '默认模型' }}</div>
             </div>
             <div class="setting-item">
               <label>温度 (Temperature)</label>
@@ -160,11 +181,11 @@
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted, computed } from 'vue'
+import { ref, nextTick, onMounted } from 'vue'
 import { ChatDotRound, Close, Delete, User, Promotion, Setting } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useTokenStore } from '@/stores/token'
-import { getAiProvidersService } from '@/api/ai'
+import { getAiModelsService } from '@/api/ai'
 
 const isOpen = ref(false)
 const inputMessage = ref('')
@@ -175,45 +196,31 @@ const tokenStore = useTokenStore()
 
 // AI设置相关
 const showSettings = ref(false)
-const providers = ref({})
-const modelOptions = ref([]) // 所有可用的模型列表
-const selectedModel = ref('') // 选中的模型（格式：provider:model）
+const models = ref({})
+const selectedModel = ref('')
 const temperature = ref(0.6)
 const maxTokens = ref(2000)
 
-// 加载可用的AI服务商和模型
-const loadProviders = async () => {
+// 加载可用的AI模型
+const loadModels = async () => {
   try {
-    const result = await getAiProvidersService()
-    if (result.code === 0 && result.data && result.data.providers) {
-      providers.value = result.data.providers
-      
-      // 构建模型选项列表
-      const options = []
-      for (const [providerKey, providerInfo] of Object.entries(result.data.providers)) {
-        options.push({
-          label: `${providerInfo.name} - ${providerInfo.defaultModel}`,
-          value: `${providerKey}:${providerInfo.defaultModel}`,
-          provider: providerKey,
-          model: providerInfo.defaultModel,
-          description: providerInfo.description
-        })
-      }
-      modelOptions.value = options
-      
+    const result = await getAiModelsService()
+    if (result.code === 0 && result.data?.models) {
+      models.value = result.data.models
       // 默认选择第一个模型
-      if (options.length > 0) {
-        selectedModel.value = options[0].value
+      const firstModelKey = Object.keys(models.value)[0]
+      if (firstModelKey) {
+        selectedModel.value = firstModelKey
       }
     }
   } catch (error) {
-    console.error('加载AI服务商失败:', error)
+    console.error('加载AI模型失败:', error)
   }
 }
 
 // 组件挂载时加载服务商列表
 onMounted(() => {
-  loadProviders()
+  loadModels()
 })
 
 const toggleChat = () => {
@@ -256,48 +263,36 @@ const sendMessage = async () => {
     time: formatTime()
   })
 
-  // 调用流式AI接口（完整版）
   isLoading.value = true
   try {
     // 构建消息历史（保留最近10条对话）
     const recentMessages = messages.value
-      .slice(Math.max(0, messages.value.length - 21), -1) // 排除刚添加的AI占位符
-      .map(msg => ({
-        role: msg.role,
-        content: msg.content
-      }))
-
-    // 解析选中的模型（格式：provider:model）
-    const [provider, model] = selectedModel.value.split(':')
+      .slice(Math.max(0, messages.value.length - 21), -1)
+      .map(msg => ({ role: msg.role, content: msg.content }))
 
     // 构建请求体
     const requestBody = {
       messages: [
-        {
-          role: 'system',
-          content: '你是助农商城的智能客服助手，请友好、专业地回答用户的问题。'
-        },
+        { role: 'system', content: '你是助农商城的智能客服助手，请友好、专业地回答用户的问题。' },
         ...recentMessages
       ],
       temperature: temperature.value,
-      maxTokens: maxTokens.value,
-      provider: provider,
-      model: model
+      maxTokens: maxTokens.value
+    }
+
+    if (selectedModel.value) {
+      requestBody.model = selectedModel.value
     }
 
     // 构建请求头
-    const headers = {
-      'Content-Type': 'application/json'
-    }
-    
-    // 如果有token，添加到请求头
+    const headers = { 'Content-Type': 'application/json' }
     if (tokenStore.token) {
       headers['Authorization'] = tokenStore.token
     }
 
     const response = await fetch('/api/ai/chat/stream', {
       method: 'POST',
-      headers: headers,
+      headers,
       body: JSON.stringify(requestBody)
     })
     
@@ -317,22 +312,15 @@ const sendMessage = async () => {
       const { done, value } = await reader.read()
       if (done) break
       
-      // 解码数据块
       buffer += decoder.decode(value, { stream: true })
-      
-      // 按行分割
       const lines = buffer.split('\n')
-      // 保留最后一个不完整的行
       buffer = lines.pop() || ''
       
-      // 处理每一行
       for (const line of lines) {
         const trimmedLine = line.trim()
-        // 解析 SSE 格式: data:内容
         if (trimmedLine.startsWith('data:')) {
           const content = trimmedLine.substring(5).trim()
           if (content) {
-            // 逐字追加到AI消息
             messages.value[aiMessageIndex].content += content
             scrollToBottom()
           }
@@ -352,7 +340,6 @@ const sendMessage = async () => {
   } catch (error) {
     ElMessage.error('AI助手暂时无法回复，请稍后再试')
     console.error('AI chat error:', error)
-    // 移除失败的AI消息
     messages.value.splice(aiMessageIndex, 1)
   } finally {
     isLoading.value = false
@@ -475,18 +462,13 @@ const clearMessages = () => {
   width: 100%;
 }
 
-.provider-option {
+.model-option {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.provider-desc {
-  font-size: 12px;
-  color: #909399;
-}
-
-.model-hint,
+.model-desc,
 .setting-hint {
   font-size: 12px;
   color: #909399;
@@ -690,5 +672,27 @@ const clearMessages = () => {
     height: calc(100vh - 100px);
     max-width: 380px;
   }
+}
+</style>
+
+<style>
+/* 全局样式：确保下拉菜单显示在最上层并保持宽度 */
+.ai-chat-select-popper {
+  z-index: 10001 !important;
+  min-width: 320px !important;
+  max-width: 320px !important;
+}
+
+.ai-chat-select-popper .el-select-dropdown__item {
+  white-space: normal !important;
+  height: auto !important;
+  line-height: 1.4 !important;
+  padding: 10px 20px !important;
+}
+
+.ai-chat-select-popper .model-option {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 </style>

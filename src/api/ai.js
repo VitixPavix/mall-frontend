@@ -1,8 +1,8 @@
 import request from '@/utils/request'
 
-// 查询可用的AI服务商
-export const getAiProvidersService = () => {
-  return request.get('/ai/providers')
+// 查询可用的AI模型
+export const getAiModelsService = () => {
+  return request.get('/ai/models')
 }
 
 // AI聊天（完整版）
