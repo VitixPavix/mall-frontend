@@ -17,13 +17,12 @@ const routes = [
   },
   {
     path: '/ai-chat',
-    component: () => import('@/views/ai/AiChat.vue'),
-    meta: { requiresAuth: true }
+    component: () => import('@/views/ai/AiConversation.vue')
   },
   {
     path: '/',
     component: () => import('@/views/index/Layout.vue'),
-    redirect: '/home',
+    redirect: '/ai-chat',
     children: [
       { path: '/home', component: () => import('@/views/index/Home.vue') },
       { path: '/products', component: () => import('@/views/index/ProductList.vue') },
@@ -102,7 +101,7 @@ router.beforeEach((to, from, next) => {
 
   // 白名单路由（无需登录即可访问）
   const isWhiteList = (path) => {
-    const whiteListPaths = ['/login', '/ai-login', '/homepage', '/home', '/products']
+    const whiteListPaths = ['/login', '/ai-login', '/homepage', '/home', '/products', '/ai-chat']
     const whiteListPrefixes = ['/product/', '/shop/']
     
     return whiteListPaths.includes(path) || 

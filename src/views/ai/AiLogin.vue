@@ -206,7 +206,7 @@ const toggleMode = () => {
 
 // 返回上一页
 const goBack = () => {
-    router.back()
+    router.push('/ai-chat')
 }
 </script>
 
@@ -232,6 +232,9 @@ const goBack = () => {
     font-weight: 500;
     transition: all 0.3s;
     backdrop-filter: blur(10px);
+    width: auto !important;
+    min-width: auto !important;
+    padding: 10px 20px !important;
 }
 
 .back-btn:hover {
@@ -294,6 +297,11 @@ const goBack = () => {
     font-weight: 500;
 }
 
+/* 返回按钮特殊处理 */
+.back-btn.el-button {
+    width: auto !important;
+}
+
 .switch-text {
     text-align: center;
     margin-top: 20px;
@@ -317,6 +325,7 @@ const goBack = () => {
 @media (max-width: 480px) {
     .login-card {
         max-width: 100%;
+        border-radius: 0;
     }
 
     .login-body {
@@ -328,6 +337,75 @@ const goBack = () => {
         left: 15px;
         font-size: 14px;
         padding: 8px 15px;
+    }
+    
+    .login-header h1 {
+        font-size: 32px;
+    }
+    
+    .login-header p {
+        font-size: 13px;
+    }
+    
+    .el-form-item {
+        margin-bottom: 20px;
+    }
+    
+    .el-button {
+        height: 48px;
+        font-size: 16px;
+    }
+    
+    .switch-text {
+        font-size: 13px;
+    }
+}
+
+/* 小屏手机 */
+@media (max-width: 375px) {
+    .ai-login-container {
+        padding: 0;
+    }
+    
+    .login-header {
+        padding: 30px 20px;
+    }
+    
+    .login-header h1 {
+        font-size: 28px;
+    }
+    
+    .logo-icon {
+        font-size: 56px;
+    }
+    
+    .login-body {
+        padding: 25px 16px;
+    }
+}
+
+/* 横屏优化 */
+@media (max-height: 600px) and (orientation: landscape) {
+    .ai-login-container {
+        padding: 10px;
+    }
+    
+    .login-header {
+        padding: 20px 30px;
+    }
+    
+    .logo-icon {
+        font-size: 48px;
+        margin-bottom: 10px;
+    }
+    
+    .login-header h1 {
+        font-size: 24px;
+        margin: 10px 0 5px;
+    }
+    
+    .login-body {
+        padding: 20px 30px;
     }
 }
 </style>

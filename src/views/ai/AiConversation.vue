@@ -1,7 +1,15 @@
 <template>
   <div class="ai-chat-page">
-    <!-- 侧边栏 - 会话列表 -->
-    <div class="sidebar">
+    <!-- 移动端汉堡菜单按钮 -->
+    <el-button 
+      class="mobile-menu-btn" 
+      :icon="Menu" 
+      @click="showDrawer = true"
+      circle
+    />
+
+    <!-- 侧边栏 - 桌面端 -->
+    <div class="sidebar desktop-only">
       <div class="sidebar-header">
         <h2>AI 对话</h2>
         <el-button type="primary" :icon="Plus" @click="createNewConversation">
@@ -30,6 +38,41 @@
       </div>
     </div>
 
+    <!-- 侧边栏 - 移动端抽屉 -->
+    <el-drawer
+      v-model="showDrawer"
+      title="会话列表"
+      direction="ltr"
+      size="80%"
+      class="mobile-drawer"
+    >
+      <div class="drawer-header">
+        <el-button type="primary" :icon="Plus" @click="createNewConversation" style="width: 100%;">
+          新建对话
+        </el-button>
+      </div>
+      
+      <div class="conversation-list">
+        <div
+          v-for="conv in conversations"
+          :key="conv.conversationId"
+          class="conversation-item"
+          :class="{ active: currentConversationId === conv.conversationId }"
+          @click="selectConversationMobile(conv.conversationId)"
+        >
+          <div class="conv-title">{{ conv.title }}</div>
+          <div class="conv-preview">{{ conv.lastMessage }}</div>
+          <div class="conv-time">{{ formatTime(conv.lastMessageTime) }}</div>
+          <el-button
+            class="delete-btn"
+            text
+            :icon="Delete"
+            @click.stop="deleteConversation(conv.conversationId)"
+          />
+        </div>
+      </div>
+    </el-drawer>
+
     <!-- 主聊天区域 -->
     <div class="chat-main">
       <!-- 聊天头部 -->
@@ -42,18 +85,35 @@
             text
             :icon="Edit"
             @click="showEditTitle = true"
+            class="desktop-only"
           />
         </div>
         <div class="header-actions">
-          <el-button text :icon="Setting" @click="showSettings = true" title="设置" />
           <el-button
             v-if="currentConversationId"
             text
             :icon="Delete"
             @click="clearCurrentConversation"
             title="清空对话"
+            class="desktop-only"
           />
-          <el-dropdown @command="handleUserMenu">
+          <!-- 移动端更多菜单 -->
+          <el-dropdown @command="handleMobileMenu" class="mobile-only">
+            <el-button text :icon="MoreFilled" />
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="editTitle" v-if="currentConversationId">
+                  <el-icon><Edit /></el-icon>
+                  <span>修改标题</span>
+                </el-dropdown-item>
+                <el-dropdown-item command="clearChat" v-if="currentConversationId">
+                  <el-icon><Delete /></el-icon>
+                  <span>清空对话</span>
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+          <el-dropdown @command="handleUserMenu" v-if="tokenStore.token && !tokenStore.isTokenExpired()">
             <el-button text title="用户菜单">
               <el-avatar :size="32" :src="userInfo.userPic">
                 <el-icon><User /></el-icon>
@@ -81,56 +141,9 @@
               </el-dropdown-menu>
             </template>
           </el-dropdown>
-        </div>
-      </div>
-
-      <!-- 设置面板 -->
-      <div v-if="showSettings" class="settings-panel">
-        <div class="settings-header">
-          <span>AI 设置</span>
-          <el-button text :icon="Close" @click="showSettings = false" />
-        </div>
-        <div class="settings-content">
-          <div class="setting-item">
-            <label>选择模型</label>
-            <el-select v-model="selectedModel" placeholder="选择AI模型">
-              <el-option
-                v-for="(info, key) in models"
-                :key="key"
-                :label="info.description"
-                :value="key"
-              >
-                <div class="model-option">
-                  <span>{{ info.description }}</span>
-                  <span class="model-desc">{{ info.model }}</span>
-                </div>
-              </el-option>
-            </el-select>
-            <div class="setting-hint">当前使用: {{ selectedModel ? models[selectedModel]?.description : '默认模型' }}</div>
-          </div>
-          <div class="setting-item">
-            <label>温度 (Temperature)</label>
-            <el-slider
-              v-model="temperature"
-              :min="0"
-              :max="2"
-              :step="0.1"
-              show-input
-              :input-size="'small'"
-            />
-            <div class="setting-hint">控制输出随机性，值越高越随机</div>
-          </div>
-          <div class="setting-item">
-            <label>最大Token数</label>
-            <el-input-number
-              v-model="maxTokens"
-              :min="100"
-              :max="8000"
-              :step="100"
-              size="small"
-            />
-            <div class="setting-hint">控制回复的最大长度</div>
-          </div>
+          <el-button v-else type="primary" @click="router.push('/ai-login')" size="small">
+            登录
+          </el-button>
         </div>
       </div>
 
@@ -157,7 +170,13 @@
             </el-avatar>
           </div>
           <div class="message-content">
-            <div class="message-text">{{ msg.content }}</div>
+            <div 
+              class="message-text" 
+              :class="{ 'markdown-body': msg.role === 'assistant' }"
+            >
+              <div v-if="msg.role === 'assistant'" v-html="renderMarkdown(msg.content)"></div>
+              <div v-else class="user-message-text">{{ msg.content }}</div>
+            </div>
             <div class="message-time">{{ formatTime(msg.createTime) }}</div>
           </div>
         </div>
@@ -181,25 +200,47 @@
 
       <!-- 输入区域 -->
       <div class="chat-input">
-        <el-input
-          v-model="inputMessage"
-          type="textarea"
-          :rows="3"
-          placeholder="输入消息..."
-          @keyup.enter.ctrl="sendMessage"
-          :disabled="isLoading"
-        />
-        <div class="input-actions">
-          <span class="input-hint">Ctrl + Enter 发送</span>
+        <div class="input-wrapper">
+          <textarea
+            v-model="inputMessage"
+            class="message-textarea"
+            placeholder="输入消息... (Ctrl+Enter 发送，Enter 换行)"
+            @keydown="handleKeyDown"
+            @input="autoResizeTextarea"
+            :disabled="isLoading"
+            rows="1"
+          />
           <el-button
             type="primary"
             :icon="Promotion"
             @click="sendMessage"
             :loading="isLoading"
             :disabled="!inputMessage.trim()"
+            class="send-button"
+            circle
+          />
+        </div>
+        <div class="model-selector">
+          <span class="model-label">模型：</span>
+          <el-select 
+            v-model="selectedModel" 
+            class="model-select-bottom"
+            size="small"
+            teleported
+            popper-class="ai-conversation-select-popper"
           >
-            发送
-          </el-button>
+            <el-option
+              v-for="(info, key) in models"
+              :key="key"
+              :label="info.description"
+              :value="key"
+            >
+              <div class="model-option">
+                <span class="model-name">{{ info.description }}</span>
+                <span class="model-desc">{{ info.model }}</span>
+              </div>
+            </el-option>
+          </el-select>
         </div>
       </div>
     </div>
@@ -294,15 +335,15 @@
 import { ref, onMounted, nextTick, computed } from 'vue'
 import {
   ChatDotRound,
-  Close,
   Delete,
   User,
   Promotion,
-  Setting,
   Plus,
   Edit,
   SwitchButton,
-  Lock
+  Lock,
+  Menu,
+  MoreFilled
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useRouter } from 'vue-router'
@@ -321,10 +362,51 @@ import {
   userUpdateInfoService, 
   userResetPasswordService 
 } from '@/api/user'
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
+import hljs from 'highlight.js'
+import 'highlight.js/styles/github-dark.css'
 
 const router = useRouter()
 const tokenStore = useTokenStore()
 const userInfoStore = useUserInfoStore()
+
+// 配置 marked
+marked.setOptions({
+  highlight: function(code, lang) {
+    if (lang && hljs.getLanguage(lang)) {
+      try {
+        return hljs.highlight(code, { language: lang }).value
+      } catch (err) {
+        console.error('代码高亮失败:', err)
+      }
+    }
+    return hljs.highlightAuto(code).value
+  },
+  breaks: true, // 支持 GitHub 风格的换行
+  gfm: true, // 启用 GitHub 风格的 Markdown
+})
+
+// Markdown 渲染函数
+const renderMarkdown = (content) => {
+  if (!content) return ''
+  try {
+    const rawHtml = marked.parse(content)
+    // 使用 DOMPurify 清理 HTML，防止 XSS 攻击
+    return DOMPurify.sanitize(rawHtml, {
+      ALLOWED_TAGS: [
+        'p', 'br', 'strong', 'em', 'u', 's', 'code', 'pre', 
+        'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'ul', 'ol', 'li', 'a', 'img', 'table', 'thead', 'tbody', 
+        'tr', 'th', 'td', 'hr', 'div', 'span'
+      ],
+      ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'target', 'rel']
+    })
+  } catch (error) {
+    console.error('Markdown 渲染失败:', error)
+    return content
+  }
+}
 
 // 用户信息
 const userInfo = computed(() => userInfoStore.info)
@@ -340,12 +422,12 @@ const inputMessage = ref('')
 const isLoading = ref(false)
 const messagesContainer = ref(null)
 
-// 设置相关
-const showSettings = ref(false)
+// 移动端抽屉
+const showDrawer = ref(false)
+
+// 模型选择
 const models = ref({})
 const selectedModel = ref('')
-const temperature = ref(0.6)
-const maxTokens = ref(2000)
 
 // 标题编辑
 const showEditTitle = ref(false)
@@ -391,7 +473,7 @@ const passwordForm = ref({
   confirmPassword: ''
 })
 
-const validateConfirmPassword = (rule, value, callback) => {
+const validateConfirmPassword = (_rule, value, callback) => {
   if (value === '') {
     callback(new Error('请再次输入新密码'))
   } else if (value !== passwordForm.value.newPassword) {
@@ -430,11 +512,8 @@ const loadModels = async () => {
     const result = await getAiModelsService()
     if (result.code === 0 && result.data?.models) {
       models.value = result.data.models
-      // 默认选择第一个模型
       const firstModelKey = Object.keys(models.value)[0]
-      if (firstModelKey) {
-        selectedModel.value = firstModelKey
-      }
+      if (firstModelKey) selectedModel.value = firstModelKey
     }
   } catch (error) {
     console.error('加载AI模型失败:', error)
@@ -455,6 +534,12 @@ const loadConversations = async () => {
 
 // 选择会话
 const selectConversation = async (conversationId) => {
+  if (!tokenStore.token || tokenStore.isTokenExpired()) {
+    ElMessage.warning('请先登录')
+    router.push('/ai-login')
+    return
+  }
+  
   currentConversationId.value = conversationId
   try {
     const result = await getConversationDetailService(conversationId)
@@ -469,6 +554,12 @@ const selectConversation = async (conversationId) => {
 
 // 创建新会话
 const createNewConversation = () => {
+  if (!tokenStore.token || tokenStore.isTokenExpired()) {
+    ElMessage.warning('请先登录')
+    router.push('/ai-login')
+    return
+  }
+  
   currentConversationId.value = null
   messages.value = []
   inputMessage.value = ''
@@ -526,24 +617,55 @@ const updateTitle = async () => {
   }
 }
 
+// 处理键盘事件
+const handleKeyDown = (e) => {
+  if (e.key === 'Enter' && e.ctrlKey) {
+    e.preventDefault()
+    sendMessage()
+  }
+}
+
+// 自动调整 textarea 高度
+const autoResizeTextarea = (e) => {
+  const textarea = e.target
+  textarea.style.height = 'auto'
+  textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px'
+}
+
 // 发送消息
 const sendMessage = async () => {
   if (!inputMessage.value.trim() || isLoading.value) return
 
+  if (!tokenStore.token || tokenStore.isTokenExpired()) {
+    ElMessageBox.confirm('请先登录后再发送消息', '提示', {
+      confirmButtonText: '去登录',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }).then(() => {
+      router.push('/ai-login')
+    }).catch(() => {})
+    return
+  }
+
   const userMessage = inputMessage.value.trim()
   inputMessage.value = ''
+  
+  // 重置 textarea 高度
+  nextTick(() => {
+    const textarea = document.querySelector('.message-textarea')
+    if (textarea) {
+      textarea.style.height = 'auto'
+    }
+  })
 
-  // 添加用户消息到界面
-  const userMsg = {
+  messages.value.push({
     id: Date.now(),
     role: 'user',
     content: userMessage,
     createTime: new Date().toISOString()
-  }
-  messages.value.push(userMsg)
+  })
   scrollToBottom()
 
-  // 准备AI消息占位符
   const aiMsgIndex = messages.value.length
   messages.value.push({
     id: Date.now() + 1,
@@ -555,41 +677,25 @@ const sendMessage = async () => {
   isLoading.value = true
 
   try {
-    // 构建请求参数
     const requestData = {
       conversationId: currentConversationId.value,
-      userMessage: userMessage,
-      temperature: temperature.value,
-      maxTokens: maxTokens.value
+      userMessage,
+      ...(selectedModel.value && { model: selectedModel.value }),
+      ...(!currentConversationId.value && { title: userMessage.substring(0, 20) })
     }
 
-    // 如果选择了模型，添加到请求中
-    if (selectedModel.value) {
-      requestData.model = selectedModel.value
-    }
-
-    // 如果是新会话，添加标题
-    if (!currentConversationId.value) {
-      requestData.title = userMessage.substring(0, 20)
-    }
-
-    // 调用流式接口
     await sendMessageStreamService(requestData, (chunk) => {
-      // 逐字追加到AI消息
       messages.value[aiMsgIndex].content += chunk
       scrollToBottom()
     })
 
-    // 流式完成后，重新加载会话列表和详情
     await loadConversations()
     
-    // 如果是新会话，需要获取新的conversationId
     if (!currentConversationId.value && conversations.value.length > 0) {
       currentConversationId.value = conversations.value[0].conversationId
     }
   } catch (error) {
     ElMessage.error('发送消息失败')
-    // 移除失败的AI消息
     messages.value.splice(aiMsgIndex, 1)
   } finally {
     isLoading.value = false
@@ -734,6 +840,21 @@ const updatePassword = async () => {
   }
 }
 
+// 选择会话（移动端）
+const selectConversationMobile = async (conversationId) => {
+  await selectConversation(conversationId)
+  showDrawer.value = false
+}
+
+// 处理移动端菜单
+const handleMobileMenu = (command) => {
+  if (command === 'editTitle') {
+    showEditTitle.value = true
+  } else if (command === 'clearChat') {
+    clearCurrentConversation()
+  }
+}
+
 // 处理用户菜单
 const handleUserMenu = async (command) => {
   if (command === 'logout') {
@@ -748,9 +869,7 @@ const handleUserMenu = async (command) => {
       userInfoStore.removeInfo()
       ElMessage.success('已退出登录')
       router.push('/ai-login')
-    } catch (error) {
-      // 用户取消
-    }
+    } catch (error) {}
   } else if (command === 'userInfo') {
     openUserInfoDialog()
   } else if (command === 'changePassword') {
@@ -761,15 +880,39 @@ const handleUserMenu = async (command) => {
 // 组件挂载时加载数据
 onMounted(() => {
   loadModels()
-  loadConversations()
+  if (tokenStore.token && !tokenStore.isTokenExpired()) {
+    loadConversations()
+  }
 })
 </script>
 
 <style scoped>
+/* 基础布局 */
 .ai-chat-page {
   display: flex;
-  height: calc(100vh - 60px);
+  height: 100vh;
   background: #f5f7fa;
+  position: relative;
+}
+
+/* 移动端菜单按钮 */
+.mobile-menu-btn {
+  display: none;
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 1000;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 桌面端显示/隐藏 */
+.desktop-only {
+  display: inline-flex;
+}
+
+.mobile-only {
+  display: none;
 }
 
 /* 侧边栏 */
@@ -849,6 +992,13 @@ onMounted(() => {
 
 .conversation-item:hover .delete-btn {
   opacity: 1;
+}
+
+/* 抽屉头部 */
+.drawer-header {
+  padding: 0 0 16px 0;
+  border-bottom: 1px solid #e4e7ed;
+  margin-bottom: 16px;
 }
 
 /* 主聊天区域 */
@@ -939,44 +1089,7 @@ onMounted(() => {
   line-height: 1.5;
 }
 
-/* 设置面板 */
-.settings-panel {
-  background: white;
-  border-bottom: 1px solid #e4e7ed;
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.settings-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 20px;
-  border-bottom: 1px solid #e4e7ed;
-  font-weight: 600;
-}
-
-.settings-content {
-  padding: 20px;
-}
-
-.setting-item {
-  margin-bottom: 20px;
-}
-
-.setting-item label {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #333;
-}
-
-.setting-item .el-select,
-.setting-item .el-input {
-  width: 100%;
-}
-
+/* 模型选择样式 */
 .model-option {
   display: flex;
   flex-direction: column;
@@ -986,12 +1099,6 @@ onMounted(() => {
 .model-desc {
   font-size: 12px;
   color: #909399;
-}
-
-.setting-hint {
-  font-size: 12px;
-  color: #909399;
-  margin-top: 4px;
 }
 
 /* 消息列表 */
@@ -1064,15 +1171,148 @@ onMounted(() => {
 .message-text {
   padding: 12px 16px;
   border-radius: 12px;
-  line-height: 1.6;
+  line-height: 1.5;
   word-wrap: break-word;
+  font-size: 15px;
+}
+
+.user-message-text {
   white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+/* Markdown 样式 */
+.markdown-body {
+  white-space: normal;
+}
+
+.markdown-body p {
+  margin: 0.5em 0;
+}
+
+.markdown-body p:first-child {
+  margin-top: 0;
+}
+
+.markdown-body p:last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4,
+.markdown-body h5,
+.markdown-body h6 {
+  margin: 1em 0 0.5em 0;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.markdown-body h1 { font-size: 1.8em; }
+.markdown-body h2 { font-size: 1.5em; }
+.markdown-body h3 { font-size: 1.3em; }
+.markdown-body h4 { font-size: 1.1em; }
+.markdown-body h5 { font-size: 1em; }
+.markdown-body h6 { font-size: 0.9em; }
+
+.markdown-body code {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.9em;
+  color: #e83e8c;
+}
+
+.markdown-body pre {
+  background: #282c34;
+  padding: 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 0.8em 0;
+}
+
+.markdown-body pre code {
+  background: transparent;
+  padding: 0;
+  color: #abb2bf;
+  font-size: 0.85em;
+  line-height: 1.5;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+  margin: 0.5em 0;
+  padding-left: 2em;
+}
+
+.markdown-body li {
+  margin: 0.3em 0;
+}
+
+.markdown-body blockquote {
+  border-left: 4px solid #667eea;
+  padding-left: 1em;
+  margin: 0.8em 0;
+  color: #666;
+  font-style: italic;
+}
+
+.markdown-body a {
+  color: #667eea;
+  text-decoration: none;
+}
+
+.markdown-body a:hover {
+  text-decoration: underline;
+}
+
+.markdown-body table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.8em 0;
+}
+
+.markdown-body th,
+.markdown-body td {
+  border: 1px solid #ddd;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.markdown-body th {
+  background: #f5f7fa;
+  font-weight: 600;
+}
+
+.markdown-body hr {
+  border: none;
+  border-top: 1px solid #e4e7ed;
+  margin: 1em 0;
+}
+
+.markdown-body strong {
+  font-weight: 600;
+}
+
+.markdown-body em {
+  font-style: italic;
+}
+
+.markdown-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  margin: 0.5em 0;
 }
 
 .message-item.user .message-text {
   background: #667eea;
   color: white;
   border-radius: 12px 12px 0 12px;
+  max-width: 100%;
 }
 
 .message-item.assistant .message-text {
@@ -1135,16 +1375,287 @@ onMounted(() => {
   border-top: 1px solid #e4e7ed;
 }
 
-.input-actions {
+.input-wrapper {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 10px;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #f5f7fa;
+  border-radius: 12px;
+  border: 1px solid #dcdfe6;
+  transition: all 0.3s;
 }
 
-.input-hint {
+.input-wrapper:focus-within {
+  border-color: #667eea;
+  background: white;
+}
+
+.message-textarea {
+  flex: 1;
+  min-height: 24px;
+  max-height: 120px;
+  border: none;
+  outline: none;
+  resize: none;
+  font-size: 15px;
+  line-height: 1.5;
+  background: transparent;
+  font-family: inherit;
+  padding: 4px 0;
+  overflow-y: auto;
+}
+
+.message-textarea:disabled {
+  background: transparent;
+  color: #c0c4cc;
+}
+
+.message-textarea::placeholder {
+  color: #c0c4cc;
+  font-size: 13px;
+}
+
+.send-button {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  min-height: 32px;
+}
+
+.send-button :deep(.el-icon) {
+  font-size: 16px;
+}
+
+/* 模型选择器 */
+.model-selector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 0 4px;
+}
+
+.model-label {
   font-size: 12px;
   color: #909399;
+  flex-shrink: 0;
+}
+
+.model-select-bottom {
+  flex: 1;
+  max-width: 200px;
+}
+
+.model-select-bottom :deep(.el-input__wrapper) {
+  font-size: 12px;
+  padding: 2px 8px;
+  background: transparent;
+  box-shadow: none;
+  border: none;
+}
+
+.model-select-bottom :deep(.el-input__inner) {
+  font-size: 12px;
+  color: #606266;
+  font-weight: 500;
+}
+
+.model-select-bottom :deep(.el-input__suffix) {
+  font-size: 12px;
+}
+
+.model-select-bottom :deep(.el-select__caret) {
+  color: #909399;
+  font-size: 12px;
+}
+
+/* 滚动条样式 */
+.message-textarea::-webkit-scrollbar {
+  width: 4px;
+}
+
+.message-textarea::-webkit-scrollbar-thumb {
+  background: #c0c4cc;
+  border-radius: 2px;
+}
+
+.message-textarea::-webkit-scrollbar-thumb:hover {
+  background: #909399;
+}
+
+/* 响应式设计 - 平板 */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 240px;
+  }
+  
+  .message-content {
+    max-width: 75%;
+  }
+}
+
+/* 响应式设计 - 移动端 */
+@media (max-width: 768px) {
+  .ai-chat-page {
+    height: 100vh;
+  }
+  
+  /* 显示移动端元素 */
+  .mobile-menu-btn {
+    display: flex;
+  }
+  
+  .mobile-only {
+    display: inline-flex;
+  }
+  
+  /* 隐藏桌面端元素 */
+  .desktop-only {
+    display: none !important;
+  }
+  
+  /* 隐藏侧边栏 */
+  .sidebar.desktop-only {
+    display: none;
+  }
+  
+  /* 聊天区域占满 */
+  .chat-main {
+    width: 100%;
+  }
+  
+  /* 头部优化 */
+  .chat-header {
+    padding: 12px 16px;
+  }
+  
+  .header-title {
+    font-size: 16px;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .ai-icon {
+    font-size: 20px;
+  }
+  
+  /* 设置面板 */
+  .settings-panel {
+    max-height: 50vh;
+  }
+  
+  /* 消息列表 */
+  .chat-messages {
+    padding: 16px 12px;
+  }
+  
+  .message-content {
+    max-width: 85%;
+  }
+  
+  .message-text {
+    font-size: 14px;
+    padding: 10px 14px;
+    line-height: 1.4;
+  }
+  
+  .user-message-text {
+    line-height: 1.4;
+  }
+  
+  .message-avatar {
+    flex-shrink: 0;
+  }
+  
+  /* 输入区域 */
+  .chat-input {
+    padding: 12px 16px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  
+  .message-textarea::placeholder {
+    font-size: 12px;
+  }
+  
+  .model-selector {
+    flex-wrap: wrap;
+  }
+  
+  .model-select-bottom {
+    max-width: 100%;
+  }
+  
+  /* 空状态 */
+  .empty-state {
+    padding: 40px 20px;
+  }
+  
+  .empty-icon {
+    font-size: 48px;
+  }
+  
+  .empty-state p {
+    font-size: 14px;
+  }
+}
+
+/* 小屏手机优化 */
+@media (max-width: 375px) {
+  .chat-header {
+    padding: 10px 12px;
+  }
+  
+  .header-title {
+    max-width: 120px;
+  }
+  
+  .message-content {
+    max-width: 90%;
+  }
+  
+  .message-text {
+    font-size: 13px;
+    padding: 8px 12px;
+    line-height: 1.4;
+  }
+  
+  .user-message-text {
+    line-height: 1.4;
+  }
+  
+  .chat-input {
+    padding: 10px 12px;
+  }
+  
+  .send-btn {
+    min-width: 60px;
+  }
+}
+
+/* 触摸优化 */
+@media (hover: none) and (pointer: coarse) {
+  /* 增大可点击区域 */
+  .conversation-item {
+    min-height: 60px;
+    padding: 14px;
+  }
+  
+  .el-button {
+    min-height: 44px;
+  }
+  
+  /* 触摸反馈 */
+  .conversation-item:active {
+    background: #e8f4ff;
+  }
+  
+  .message-item:active {
+    opacity: 0.9;
+  }
 }
 
 /* 滚动条样式 */
@@ -1166,26 +1677,37 @@ onMounted(() => {
 </style>
 
 <style>
-/* 全局样式：让下拉框选项显示两行 */
-.el-select-dropdown__item {
-  height: auto !important;
-  line-height: 1.4 !important;
-  padding: 10px 20px !important;
+/* 全局样式：优化下拉菜单 */
+.ai-conversation-select-popper {
+  z-index: 10001 !important;
+  min-width: 280px !important;
+  max-width: 320px !important;
 }
 
-.model-option {
+.ai-conversation-select-popper .el-select-dropdown__item {
+  white-space: normal !important;
+  height: auto !important;
+  line-height: 1.3 !important;
+  padding: 8px 16px !important;
+}
+
+.ai-conversation-select-popper .model-option {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
-.model-option span:first-child {
+.ai-conversation-select-popper .model-name {
+  font-size: 13px;
   font-weight: 500;
   color: #303133;
 }
 
-.model-option .model-desc {
-  font-size: 12px;
+.ai-conversation-select-popper .model-desc {
+  font-size: 11px;
   color: #909399;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>
