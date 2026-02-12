@@ -407,7 +407,7 @@ const editRules = {
     { required: true, message: '请输入用户名', trigger: 'blur' },
     { min: 3, max: 20, message: '用户名长度在3到20个字符', trigger: 'blur' }
   ],
-  shopname: [
+  shopName: [
     { required: true, message: '请输入店铺名称', trigger: 'blur' },
     { min: 2, max: 30, message: '店铺名称长度在2到30个字符', trigger: 'blur' }
   ],
