@@ -77,6 +77,36 @@
                         {{ isRegister ? '立即登录' : '立即注册' }}
                     </span>
                 </div>
+
+                <!-- 免注册体验区域 - 仅在登录模式显示 -->
+                <div class="test-account" v-if="!isRegister">
+                    <div class="test-account-header">
+                        <el-icon><InfoFilled /></el-icon>
+                        <span>免注册快速体验</span>
+                    </div>
+                    <div class="test-account-card" @click="fillTestAccount">
+                        <div class="account-icon">
+                            <el-icon><User /></el-icon>
+                        </div>
+                        <div class="account-info">
+                            <div class="account-detail">
+                                <span class="label">测试账号：</span>
+                                <span class="value">user0</span>
+                            </div>
+                            <div class="account-detail">
+                                <span class="label">测试密码：</span>
+                                <span class="value">123456</span>
+                            </div>
+                        </div>
+                        <div class="account-action">
+                            <span class="action-text">点击填充</span>
+                            <el-icon><Right /></el-icon>
+                        </div>
+                    </div>
+                    <div class="test-account-tip">
+                        点击卡片即可自动填充测试账号信息
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -85,7 +115,7 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { User, Lock, Iphone, ChatDotRound, ArrowLeft } from '@element-plus/icons-vue'
+import { User, Lock, Iphone, ChatDotRound, ArrowLeft, InfoFilled, Right } from '@element-plus/icons-vue'
 import { useTokenStore } from '@/stores/token'
 import useUserInfoStore from '@/stores/userInfo'
 import { userRegisterService, userLoginService, userInfoService } from '@/api/user'
@@ -208,6 +238,13 @@ const toggleMode = () => {
 const goBack = () => {
     router.push('/ai-chat')
 }
+
+// 填充测试账号
+const fillTestAccount = () => {
+    form.username = 'user0'
+    form.password = '123456'
+    ElMessage.success('已自动填充测试账号信息')
+}
 </script>
 
 <style scoped>
@@ -322,6 +359,117 @@ const goBack = () => {
     text-decoration: underline;
 }
 
+/* 免注册体验区域样式 */
+.test-account {
+    margin-top: 30px;
+    padding: 20px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e8eef5 100%);
+    border-radius: 12px;
+    border: 1px solid #e4e7ed;
+}
+
+.test-account-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #303133;
+    margin-bottom: 14px;
+}
+
+.test-account-header .el-icon {
+    font-size: 18px;
+    color: #667eea;
+}
+
+.test-account-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    background: white;
+    border-radius: 10px;
+    border: 2px solid #e4e7ed;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.test-account-card:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+    transform: translateY(-2px);
+}
+
+.account-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    color: white;
+}
+
+.account-icon .el-icon {
+    font-size: 24px;
+}
+
+.account-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.account-detail {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+}
+
+.account-detail .label {
+    color: #909399;
+    min-width: 70px;
+    font-weight: 500;
+}
+
+.account-detail .value {
+    color: #303133;
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.5px;
+}
+
+.account-action {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #909399;
+    transition: all 0.3s;
+}
+
+.action-text {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.test-account-card:hover .account-action {
+    color: #667eea;
+    transform: translateX(4px);
+}
+
+.test-account-tip {
+    margin-top: 12px;
+    text-align: center;
+    font-size: 12px;
+    color: #909399;
+    font-style: italic;
+}
+
 @media (max-width: 480px) {
     .login-card {
         max-width: 100%;
@@ -358,6 +506,37 @@ const goBack = () => {
     
     .switch-text {
         font-size: 13px;
+    }
+
+    /* 小屏幕上调整测试账号区域 */
+    .test-account {
+        padding: 16px;
+    }
+
+    .test-account-card {
+        padding: 14px;
+        gap: 12px;
+    }
+
+    .account-icon {
+        width: 42px;
+        height: 42px;
+    }
+
+    .account-icon .el-icon {
+        font-size: 20px;
+    }
+
+    .account-detail {
+        font-size: 13px;
+    }
+
+    .account-detail .label {
+        min-width: 65px;
+    }
+
+    .action-text {
+        display: none;
     }
 }
 

@@ -4,7 +4,7 @@
     <el-header class="header">
       <div class="container">
         <div class="nav-container">
-          <div class="logo">助农商城</div>
+          <div class="logo">惠农商城</div>
           <ul class="nav-menu">
             <li v-for="item in navItems" :key="item.path" class="nav-item" :class="{ active: currentNav === item.path }"
               @click="handleNavClick(item.path)">

@@ -19,7 +19,7 @@
         </el-form-item>
         <el-form-item label="店铺名称">
           <el-input
-            v-model="searchForm.shopname"
+            v-model="searchForm.shopName"
             placeholder="请输入店铺名称"
             clearable
             style="width: 200px"
@@ -86,7 +86,7 @@
         
         <el-table-column prop="username" label="用户名" min-width="120" />
         
-        <el-table-column prop="shopname" label="店铺名称" min-width="150" />
+        <el-table-column prop="shopName" label="店铺名称" min-width="150" />
 
         <el-table-column label="头像" width="80">
           <template #default="{ row }">
@@ -193,7 +193,7 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="店铺名称" prop="shopname">
-              <el-input v-model="editForm.shopname" placeholder="请输入店铺名称" />
+              <el-input v-model="editForm.shopName" placeholder="请输入店铺名称" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -366,7 +366,7 @@ const selectedIds = ref([])
 // 搜索表单
 const searchForm = reactive({
   username: '',
-  shopname: '',
+  shopName: '',
   phone: '',
   state: ''
 })
@@ -384,7 +384,7 @@ const editFormRef = ref()
 const editForm = reactive({
   id: null,
   username: '',
-  shopname: '',
+  shopName: '',
   email: '',
   phone: '',
   state: '启用',
@@ -455,6 +455,7 @@ const fetchShopList = async () => {
     }
 
     const res = await getShopListService(requestData)
+    console.log('获取店铺列表成功:', res)
     if (res.code === 0) {
       let rawData = []
       
@@ -467,6 +468,7 @@ const fetchShopList = async () => {
       }
 
       shopList.value = rawData
+      console.log('店铺列表:', shopList.value)
     }
   } catch (error) {
     console.error('获取店铺列表失败:', error)
@@ -516,7 +518,7 @@ const handleEdit = (row) => {
   Object.assign(editForm, {
     id: row.id,
     username: row.username,
-    shopname: row.shopname || '',
+    shopName: row.shopName || '',
     email: row.email || '',
     phone: row.phone || '',
     state: row.state,

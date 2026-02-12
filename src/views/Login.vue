@@ -15,7 +15,7 @@
         <div class="login-card">
             <div class="login-header">
                 <h1>{{ isRegister ? '注册账号' : '欢迎登录' }}</h1>
-                <h2>{{ isRegister ? '' : '助农电商平台' }}</h2>
+                <h2>{{ isRegister ? '' : '惠农电商平台' }}</h2>
                 <p>{{ isRegister ? '创建您的账号' : '请选择您的身份并登录系统' }}</p>
             </div>
 
@@ -130,6 +130,74 @@
                     </span>
                 </div>
 
+                <!-- 免注册体验区域 - 仅在登录模式显示 -->
+                <div class="test-accounts" v-if="!isRegister">
+                    <div class="test-accounts-header">
+                        <el-icon><InfoFilled /></el-icon>
+                        <span>免注册快速体验</span>
+                    </div>
+                    <div class="test-accounts-content">
+                        <div class="account-item" @click="fillTestAccount('user')">
+                            <div class="account-role">
+                                <el-tag type="primary" size="small">普通用户</el-tag>
+                            </div>
+                            <div class="account-info">
+                                <div class="account-detail">
+                                    <span class="label">账号：</span>
+                                    <span class="value">user0</span>
+                                </div>
+                                <div class="account-detail">
+                                    <span class="label">密码：</span>
+                                    <span class="value">123456</span>
+                                </div>
+                            </div>
+                            <div class="account-action">
+                                <el-icon><Right /></el-icon>
+                            </div>
+                        </div>
+
+                        <div class="account-item" @click="fillTestAccount('shop')">
+                            <div class="account-role">
+                                <el-tag type="success" size="small">商户账号</el-tag>
+                            </div>
+                            <div class="account-info">
+                                <div class="account-detail">
+                                    <span class="label">账号：</span>
+                                    <span class="value">hhhhhh</span>
+                                </div>
+                                <div class="account-detail">
+                                    <span class="label">密码：</span>
+                                    <span class="value">123456</span>
+                                </div>
+                            </div>
+                            <div class="account-action">
+                                <el-icon><Right /></el-icon>
+                            </div>
+                        </div>
+
+                        <div class="account-item" @click="fillTestAccount('admin')">
+                            <div class="account-role">
+                                <el-tag type="danger" size="small">管理员</el-tag>
+                            </div>
+                            <div class="account-info">
+                                <div class="account-detail">
+                                    <span class="label">账号：</span>
+                                    <span class="value">admin1</span>
+                                </div>
+                                <div class="account-detail">
+                                    <span class="label">密码：</span>
+                                    <span class="value">123456</span>
+                                </div>
+                            </div>
+                            <div class="account-action">
+                                <el-icon><Right /></el-icon>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="test-accounts-tip">
+                        点击任意账号即可自动填充登录信息
+                    </div>
+                </div>
 
             </div>
         </div>
@@ -139,7 +207,7 @@
 <script setup>
 import { ref, reactive, watch, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { User, Lock, Iphone, Shop, Plus, View, HomeFilled } from '@element-plus/icons-vue'
+import { User, Lock, Iphone, Shop, Plus, View, HomeFilled, InfoFilled, Right } from '@element-plus/icons-vue'
 import { uploadImageService } from '@/api/upload'
 
 // 响应式数据
@@ -269,7 +337,7 @@ const handleLogin = async () => {
         router.push(config.homePath)
     } catch (error) {
         console.error('登录错误:', error)
-        ElMessage.error(error.response?.data?.msg || error.message || '登录失败')
+        //ElMessage.error(error.response?.data?.msg || error.message || '登录失败')，响应拦截器重复操作
     } finally {
         loading.value = false
     }
@@ -387,6 +455,23 @@ watch(isRegister, (newVal) => {
 // 回到商城首页
 const backToMall = () => {
     router.push('/home')
+}
+
+// 填充测试账号
+const fillTestAccount = (role) => {
+    const testAccounts = {
+        user: { role: 'user', username: 'user0', password: '123456' },
+        shop: { role: 'shop', username: 'hhhhhh', password: '123456' },
+        admin: { role: 'admin', username: 'admin1', password: '123456' }
+    }
+    
+    const account = testAccounts[role]
+    if (account) {
+        form.role = account.role
+        form.username = account.username
+        form.password = account.password
+        ElMessage.success(`已自动填充${role === 'user' ? '普通用户' : role === 'shop' ? '商户' : '管理员'}测试账号`)
+    }
 }
 
 </script>
@@ -720,6 +805,115 @@ const backToMall = () => {
     }
 }
 
+/* 免注册体验区域样式 */
+.test-accounts {
+    margin-top: 30px;
+    padding: 20px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e8eef5 100%);
+    border-radius: 12px;
+    border: 1px solid #e4e7ed;
+}
+
+.test-accounts-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #303133;
+    margin-bottom: 16px;
+}
+
+.test-accounts-header .el-icon {
+    font-size: 18px;
+    color: #409EFF;
+}
+
+.test-accounts-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.account-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e4e7ed;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.account-item:hover {
+    border-color: #409EFF;
+    box-shadow: 0 2px 12px rgba(64, 158, 255, 0.15);
+    transform: translateX(4px);
+}
+
+.account-role {
+    flex-shrink: 0;
+}
+
+.account-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.account-detail {
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+}
+
+.account-detail .label {
+    color: #909399;
+    min-width: 45px;
+}
+
+.account-detail .value {
+    color: #303133;
+    font-weight: 500;
+    font-family: 'Courier New', monospace;
+}
+
+.account-action {
+    flex-shrink: 0;
+    color: #c0c4cc;
+    transition: all 0.3s;
+}
+
+.account-item:hover .account-action {
+    color: #409EFF;
+    transform: translateX(3px);
+}
+
+.test-accounts-tip {
+    margin-top: 12px;
+    text-align: center;
+    font-size: 12px;
+    color: #909399;
+    font-style: italic;
+}
+
+
+    /* 小屏幕上调整测试账号区域 */
+    .test-accounts {
+        padding: 15px;
+    }
+
+    .account-item {
+        padding: 12px;
+    }
+
+    .account-detail {
+        font-size: 12px;
+    }
+/* 至此，免注册体验区域样式结束 */
 
 /* 媒体查询：小屏幕设备适配（最大宽度480px） */
 @media (max-width: 480px) {
