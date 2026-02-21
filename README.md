@@ -11,7 +11,7 @@
 
 **基于 Vue 3 + Spring Boot 3 + Spring AI 的现代化全栈电商平台**
 
-[功能特性](#-功能特性) • [技术栈](#️-技术栈) • [快速开始](#-快速开始) • [项目结构](#-项目结构) • [API 文档](#-api-文档)
+[功能特性](#-功能特性) • [技术栈](#️-技术栈) • [在线演示](#-在线演示) • [快速开始](#-快速开始) • [项目结构](#-项目结构) • [API 文档](#-api-文档)
 
 </div>
 
@@ -22,6 +22,12 @@
 助农商城系统是一个功能完整的现代化电商平台，采用前后端分离架构开发。项目最大亮点是集成了 **Spring AI 智能对话系统**，支持多 AI 服务商（ModelScope、Moonshot AI 等）动态切换，为用户提供智能化的购物咨询体验。
 
 系统支持**用户购物、商家管理、平台管理**三种角色，实现了从商品浏览、购物车、下单支付到订单管理、数据统计的完整电商业务闭环。
+
+> ⚠️ **重要声明**：
+> - 本项目为毕业设计作品，目前尚未完成答辩
+> - 当前仅开源**前端代码**部分，后端代码暂不公开
+> - 答辩完成后将考虑开源完整项目代码
+> - 在线演示地址可正常访问和体验所有功能
 
 ### ✨ 核心亮点
 
@@ -102,6 +108,19 @@
 
 ---
 
+## 🌐 在线演示
+
+项目已部署到服务器，可以直接访问体验：
+
+**访问地址**: [http://118.145.113.52](http://118.145.113.52)
+
+> 💡 提示：
+> - 首次访问可能需要等待几秒加载
+> - 建议使用 Chrome、Edge 或 Firefox 浏览器访问
+> - 可以使用下方提供的测试账号快速体验各个角色功能
+
+---
+
 ## 🚀 快速开始
 
 ### 环境要求
@@ -115,10 +134,12 @@
 ### 1. 克隆项目
 
 ```bash
-前端项目
+# 前端项目（已开源）
 git clone https://github.com/VitixPavix/mall-frontend.git
 cd mall-frontend
 ```
+
+> 📌 **注意**：后端代码暂未开源，如需完整体验请访问在线演示地址
 
 ### 2. 数据库配置
 
@@ -479,19 +500,19 @@ aliyun:
 ## 📸 项目截图
 
 ### 项目介绍页面
-![项目介绍](frontend/mall/screenshots/homepage.png)
+![项目介绍](screenshots/homepage.png)
 
 ### 商城首页
-![商城首页](frontend/mall/screenshots/mall-home.png)
+![商城首页](screenshots/mall-home.png)
 
 ### AI 智能对话
-![AI 对话](frontend/mall/screenshots/ai-chat.png)
+![AI 对话](screenshots/ai-chat.png)
 
 ### 商品详情
-![商品详情](frontend/mall/screenshots/product-detail.png)
+![商品详情](screenshots/product-detail.png)
 
 ### 管理后台
-![管理后台](frontend/mall/screenshots/admin-dashboard.png)
+![管理后台](screenshots/admin-dashboard.png)
 
 ---
 
@@ -567,9 +588,15 @@ aliyun:
 
 ## 👨‍💻 作者信息
 
-- **项目类型**: 毕业设计 / 个人项目
+- **项目类型**: 毕业设计项目
 - **开发时间**: 2025 - 2026
 - **技术难度**: ⭐⭐⭐⭐（中高级）
+- **开源状态**: 前端已开源，后端待答辩后开源
+
+### 代码仓库
+
+- **前端仓库**: [mall-frontend](https://github.com/VitixPavix/mall-frontend) ✅ 已开源
+- **后端仓库**: 暂未开源（答辩后开放）
 
 ---
 
