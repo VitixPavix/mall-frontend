@@ -212,6 +212,7 @@ import {
 } from '@/api/productCollection'
 import { addCartService } from '@/api/cart'
 import { useTokenStore } from '@/stores/token'
+import useUserInfoStore from '@/stores/userInfo'
 
 // 默认图片
 const defaultImage = 'https://via.placeholder.com/300x300?text=No+Image'
@@ -220,6 +221,7 @@ const defaultImage = 'https://via.placeholder.com/300x300?text=No+Image'
 const router = useRouter()
 const route = useRoute()
 const tokenStore = useTokenStore()
+const userInfoStore = useUserInfoStore()
 
 // 响应式数据
 const loading = ref(false)
@@ -236,7 +238,15 @@ const favoriteProductIds = ref(new Set()) // 存储已收藏的商品ID
 
 // 获取用户收藏列表
 const fetchUserFavorites = async () => {
+  // 只有普通用户才需要获取收藏列表
   if (!tokenStore.token) return
+  
+  // 检查用户角色，只有普通用户才获取收藏列表
+  const userInfo = userInfoStore.info
+  if (!userInfo || !userInfo.role) return
+  
+  // 判断是否为普通用户：通过 role 字段判断
+  if (userInfo.role !== 'user') return
   
   try {
     const res = await getProductCollectionListService()
