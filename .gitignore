@@ -35,6 +35,5 @@ coverage
 # Vitest
 __screenshots__/
 
-# API.md
-API接口文档.md
+
 .kiro
